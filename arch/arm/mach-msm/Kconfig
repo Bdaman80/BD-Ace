@@ -1319,14 +1319,14 @@ config MSM_CPU_FREQ_ONDEMAND_MAX
 	int "Max"
 	default 384000
 
+config MSM_CPU_FREQ_ONDEMAND_MIN
+	int "Min"
+	default 245760
+
 config BIGBOY
 	bool "BigBoy Mode - 1.8GHz OC"
 	default n
 	depends on CPU_FREQ && !PERFLOCK
-
-config MSM_CPU_FREQ_ONDEMAND_MIN
-	int "Min"
-	default 245760
 
 config MSM_HW3D
 	tristate "MSM Hardware 3D Register Driver"
