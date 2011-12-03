@@ -303,7 +303,6 @@ static int audio_enable(struct audio *audio)
 	if (audio->enabled)
 		return 0;
 
-	audio->dec_state = MSM_AUD_DECODER_STATE_NONE;
 	audio->out_tail = 0;
 	audio->out_needed = 0;
 
@@ -2522,4 +2521,3 @@ module_exit(audio_exit);
 
 MODULE_DESCRIPTION("MSM MP3 driver");
 MODULE_LICENSE("GPL v2");
-
