@@ -57,6 +57,23 @@ static uint32_t wait_pending;
 
 static struct alarm alarms[ANDROID_ALARM_TYPE_COUNT];
 
+#ifdef CONFIG_BUILD_CIQ
+static int is_set_cmd(unsigned int cmd)
+{
+	if ((ANDROID_ALARM_BASE_CMD(cmd) != ANDROID_ALARM_GET_TIME(0)) &&
+	    (ANDROID_ALARM_BASE_CMD(cmd) != ANDROID_ALARM_GET_TICKS(0)))
+		return 1;
+	return 0;
+}
+#else
+static int is_set_cmd(unsigned int cmd)
+{
+	if (ANDROID_ALARM_BASE_CMD(cmd) != ANDROID_ALARM_GET_TIME(0))
+		return 1;
+	return 0;
+}
+#endif
+
 static long alarm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int rv = 0;
@@ -304,4 +321,5 @@ static void  __exit alarm_dev_exit(void)
 
 module_init(alarm_dev_init);
 module_exit(alarm_dev_exit);
+
 
