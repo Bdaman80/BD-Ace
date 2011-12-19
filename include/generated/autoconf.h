@@ -1,7 +1,7 @@
 /*
  * Automatically generated C config: don't edit
  * Linux kernel version: 2.6.35.10
- * Sun Dec 18 10:19:35 2011
+ * Sun Dec 18 12:49:03 2011
  */
 #define AUTOCONF_INCLUDED
 #define CONFIG_NF_CONNTRACK_H323 1
@@ -155,6 +155,7 @@
 #define CONFIG_NETFILTER_XT_TARGET_NFQUEUE 1
 #define CONFIG_WEXT_CORE 1
 #define CONFIG_NLS 1
+#define CONFIG_SCHED_AUTOGROUP 1
 #define CONFIG_S5K4E1GX 1
 #define CONFIG_MFD_SUPPORT 1
 #define CONFIG_NETFILTER_XT_MATCH_OWNER 1
@@ -465,7 +466,7 @@
 #define CONFIG_MSM_CAMERA 1
 #define CONFIG_DEBUG_KERNEL 1
 #define CONFIG_COMPAT_BRK 1
-#define CONFIG_LOCALVERSION "-BD-Ace_v1.1.6-Dev_CIQ-less"
+#define CONFIG_LOCALVERSION "-BD-Ace_v1.1.6_Dev_2011-12-18"
 #define CONFIG_MACH_SPADE 1
 #define CONFIG_CRYPTO 1
 #define CONFIG_SCHED_DEBUG 1
