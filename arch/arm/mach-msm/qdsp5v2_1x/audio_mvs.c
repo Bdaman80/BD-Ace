@@ -1225,7 +1225,7 @@ static ssize_t audio_mvs_write(struct file *file,
 				pr_aud_err("%s: No free DL buffs\n", __func__);
 			}
 		} else {
-			pr_aud_err("%s: Write count %d < sizeof(frame) %d",
+			pr_aud_err("%s: Write count %d > sizeof(frame) %d",
 			       __func__, count,
 			       sizeof(struct msm_audio_mvs_frame));
 

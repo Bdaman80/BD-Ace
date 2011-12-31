@@ -192,6 +192,11 @@ int msm_adsp_get(const char *name, struct msm_adsp_module **out,
 	struct msm_adsp_module *module;
 	int rc = 0;
 
+	if(!name) {
+		MM_AUD_ERR("Empty name passed!\n");
+		return -EPERM;
+	}
+
 	module = find_adsp_module_by_name(&adsp_info, name);
 	if (!module)
 		return -ENODEV;
@@ -359,6 +364,7 @@ int __msm_adsp_write(struct msm_adsp_module *module, unsigned dsp_queue_addr,
 
 	if ((ctrl_word & ADSP_RTOS_WRITE_CTRL_WORD_STATUS_M) !=
 	    ADSP_RTOS_WRITE_CTRL_WORD_NO_ERR_V) {
+		/* MM_DBG("won't do. EAGAIN\n"); */
 		ret_status = -EAGAIN;
 		goto fail;
 	} else {
@@ -431,10 +437,12 @@ int msm_adsp_write(struct msm_adsp_module *module, unsigned dsp_queue_addr,
 								cmd_size);
 		if (rc == -EAGAIN)
 			udelay(50);
-	} while (rc == -EAGAIN && retries++ < 100);
+	} while (rc == -EAGAIN && retries++ < 300);
 	if (retries > 20)
 		MM_AUD_INFO("%s command took %d attempts: rc %d\n",
 			module->name, retries, rc);
+
+	if(rc != 0) MM_DBG("error %d\n", rc);
 	return rc;
 }
 
@@ -855,8 +863,8 @@ int msm_adsp_enable(struct msm_adsp_module *module)
 		if (module->state == ADSP_STATE_ENABLED) {
 			rc = 0;
 		} else {
-			MM_AUD_ERR("module '%s' enable timed out\n",
-					module->name);
+			MM_AUD_ERR("module '%s' enable timed out: state %d\n",
+					module->name, module->state);
 			rc = -ETIMEDOUT;
 		}
 		if (module->open_count++ == 0 && module->clk)

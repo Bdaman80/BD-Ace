@@ -323,8 +323,10 @@ static int snddev_icodec_open_rx(struct snddev_icodec_state *icodec)
 	mi2s_set_codec_output_path((icodec->data->channel_mode == 2 ?
 	MI2S_CHAN_STEREO : MI2S_CHAN_MONO_PACKED), WT_16_BIT);
 
+#ifndef AURORA
 	if (!support_aic3254 ||
 		 !strcmp(icodec->data->name, "usb_headset_stereo_rx")) {
+#endif
 		/* Configure ADIE */
 		trc = adie_codec_open(icodec->data->profile, &icodec->adie_path);
 		if (IS_ERR_VALUE(trc))
@@ -333,7 +335,10 @@ static int snddev_icodec_open_rx(struct snddev_icodec_state *icodec)
 		 * If OSR is to be changed, need clock API for setting the divider
 		 */
 		adie_codec_setpath(icodec->adie_path, icodec->sample_rate, 256);
+#ifndef AURORA
 	}
+#endif
+
 
 	/* Start AFE */
 	afe_config.sample_rate = icodec->sample_rate / 1000;
@@ -343,8 +348,10 @@ static int snddev_icodec_open_rx(struct snddev_icodec_state *icodec)
 	if (IS_ERR_VALUE(trc))
 		goto error_afe;
 	lpa_cmd_enable_codec(drv->lpa, 1);
+#ifndef AURORA
 	if (!support_aic3254 ||
 		 !strcmp(icodec->data->name, "usb_headset_stereo_rx")) {
+#endif
 		/* Enable ADIE */
 		if (adie_codec_proceed_stage(icodec->adie_path,
 					ADIE_CODEC_DIGITAL_READY) ) {
@@ -357,7 +364,9 @@ static int snddev_icodec_open_rx(struct snddev_icodec_state *icodec)
 			icodec->adie_path->profile = NULL;
 			goto error_adie;
 		}
+#ifndef AURORA
 	}
+#endif
 
 	/* Enable power amplifier */
 	if (icodec->data->pamp_on)
@@ -471,15 +480,18 @@ static int snddev_icodec_close_rx(struct snddev_icodec_state *icodec)
 	/* Disable power amplifier */
 	if (icodec->data->pamp_on)
 		icodec->data->pamp_on(0);
-
+#ifndef AURORA
 	if (!support_aic3254 ||
 		 !strcmp(icodec->data->name, "usb_headset_stereo_rx")) {
+#endif
 		/* Disable ADIE */
 		adie_codec_proceed_stage(icodec->adie_path,
 						ADIE_CODEC_DIGITAL_OFF);
 		adie_codec_close(icodec->adie_path);
 		icodec->adie_path = NULL;
+#ifndef AURORA
 	}
+#endif
 
 	afe_disable(AFE_HW_PATH_CODEC_RX);
 
@@ -541,8 +553,12 @@ static int snddev_icodec_set_device_volume_impl(
 	icodec = dev_info->private_data;
 
 	if (icodec->data->capability & SNDDEV_CAP_RX) {
+
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#ifndef AURORA
 		if (support_aic3254)
 			return rc;
+#endif
 		afe_path_id = AFE_HW_PATH_CODEC_RX;
 	} else
 		afe_path_id = AFE_HW_PATH_CODEC_TX;
