@@ -279,9 +279,9 @@ void invalidate_bdev(struct block_device *bdev)
 	lru_add_drain_all();	/* make sure all lru add caches are flushed */
 	invalidate_mapping_pages(mapping, 0, -1);
 
-	cleancache_flush_inote(mapping);
+	/*cleancache_flush_inote(mapping);*/ /*Enable Later*/
 }
-EXPORT_SYMBOL(I_BDEV);
+EXPORT_SYMBOL(invalidate_bdev);
 
 /*
  * Kick the writeback threads then try to free up some ZONE_NORMAL memory.
