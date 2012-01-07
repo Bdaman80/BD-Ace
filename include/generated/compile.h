@@ -1,8 +1,8 @@
-/* This file is auto generated, version 4 */
+/* This file is auto generated, version 5 */
 /*  PREEMPT */
 #define UTS_MACHINE "arm"
-#define UTS_VERSION "#4 PREEMPT Sun Dec 18 22:01:01 CST 2011"
-#define LINUX_COMPILE_TIME "22:01:01"
+#define UTS_VERSION "#5 PREEMPT Sat Jan 7 09:02:13 CST 2012"
+#define LINUX_COMPILE_TIME "09:02:13"
 #define LINUX_COMPILE_BY "bdaman"
 #define LINUX_COMPILE_HOST "Height03"
 #define LINUX_COMPILE_DOMAIN "(none)"
