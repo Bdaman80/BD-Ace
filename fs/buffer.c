@@ -281,7 +281,7 @@ void invalidate_bdev(struct block_device *bdev)
 
 	cleancache_flush_inote(mapping);
 }
-EXPORT_SYMBOL(invalidate_bdev);
+EXPORT_SYMBOL(I_BDEV);
 
 /*
  * Kick the writeback threads then try to free up some ZONE_NORMAL memory.
