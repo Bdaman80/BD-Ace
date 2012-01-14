@@ -68,10 +68,6 @@
 #include <mach/qdsp5v2_1x/qdsp5audppmsg.h>
 #include <mach/qdsp5v2_1x/audpp.h>
 
-#include <mach/qdsp5v2/snddev_icodec.h>
-#include <linux/mfd/msm-adie-codec.h>
-
-
 #ifndef MAX
 #define  MAX(x, y) (((x) > (y)) ? (x) : (y))
 #endif
@@ -85,7 +81,7 @@ struct audio_dev_ctrl_state {
 	atomic_t opened;
 	struct msm_snddev_info *voice_rx_dev;
 	struct msm_snddev_info *voice_tx_dev;
-/*   	wait_queue_head_t      wait;  */
+	wait_queue_head_t      wait;
 };
 
 static struct audio_dev_ctrl_state audio_dev_ctrl;
@@ -97,19 +93,6 @@ struct session_freq {
 	int freq;
 	int evt;
 };
-
-
-#undef REC_TEST
-
-#ifdef REC_TEST
-struct rt_data {
-     uint32_t enabled_devs;	
-     struct msm_snddev_info voice_rx_dev;
-     struct msm_snddev_info voice_tx_dev;
-     int rx_valid;
-     int tx_valid;
-};
-#endif
 
 struct audio_routing_info {
 	unsigned short mixer_mask[MAX_DEC_SESSIONS];
@@ -124,24 +107,13 @@ struct audio_routing_info {
 	signed int voice_rx_vol;
 	int tx_mute;
 	int rx_mute;
-	int voice_state;
 };
 
 static struct audio_routing_info routing_info;
 
-int msm_get_voice_state(void)
-{
-        MM_DBG("voice state %d\n", routing_info.voice_state);
-        return routing_info.voice_state;
-}
-EXPORT_SYMBOL(msm_get_voice_state);
-
 int msm_set_voice_mute(int dir, int mute)
 {
 	MM_AUD_INFO("dir %x mute %x\n", dir, mute);
-        if (!audio_dev_ctrl.voice_rx_dev
-                || !audio_dev_ctrl.voice_tx_dev)
-                return -EPERM;
 	if (dir == DIR_TX) {
 		routing_info.tx_mute = mute;
 		broadcast_event(AUDDEV_EVT_DEVICE_VOL_MUTE_CHG,
@@ -158,10 +130,6 @@ EXPORT_SYMBOL(msm_set_voice_mute);
 
 int msm_set_voice_vol(int dir, s32 volume)
 {
-        if (!audio_dev_ctrl.voice_rx_dev
-                || !audio_dev_ctrl.voice_tx_dev)
-                return -EPERM;
-	MM_DBG("dir %d, vol %d\n", dir, volume);
 	if (dir == DIR_TX) {
 		routing_info.voice_tx_vol = volume;
 		broadcast_event(AUDDEV_EVT_DEVICE_VOL_MUTE_CHG,
@@ -180,13 +148,11 @@ EXPORT_SYMBOL(msm_set_voice_vol);
 
 void msm_snddev_register(struct msm_snddev_info *dev_info)
 {
-	MM_AUD_INFO("msm_snddev_register\n");
 	mutex_lock(&session_lock);
 	if (audio_dev_ctrl.num_dev < AUDIO_DEV_CTL_MAX_DEV) {
 		audio_dev_ctrl.devs[audio_dev_ctrl.num_dev] = dev_info;
 		dev_info->dev_volume = 0; /* 0 db */
 		dev_info->sessions = 0x0;
-		dev_info->set_sample_rate = 0;
 		audio_dev_ctrl.num_dev++;
 	} else
 		MM_AUD_ERR("%s: device registry max out\n", __func__);
@@ -210,14 +176,12 @@ EXPORT_SYMBOL(msm_snddev_query);
 
 int msm_snddev_is_set(int popp_id, int copp_id)
 {
-	MM_DBG("popp=%d copp=%d\n", popp_id, copp_id);
 	return routing_info.mixer_mask[popp_id] & (0x1 << copp_id);
 }
 EXPORT_SYMBOL(msm_snddev_is_set);
 
 unsigned short msm_snddev_route_enc(int enc_id)
 {
-	MM_DBG("enc=%d\n", enc_id);
 	if (enc_id >= MAX_ENC_SESSIONS)
 		return -EINVAL;
 	return routing_info.audrec_mixer_mask[enc_id];
@@ -245,7 +209,6 @@ EXPORT_SYMBOL(msm_snddev_set_dec);
 
 int msm_snddev_set_enc(int popp_id, int copp_id, int set)
 {
-	MM_DBG("popp=%d, copp=%d, set=%d\n", popp_id, copp_id, set);
 	if (set)
 		routing_info.audrec_mixer_mask[popp_id] |= (0x1 << copp_id);
 	else
@@ -274,7 +237,6 @@ int msm_set_voc_route(struct msm_snddev_info *dev_info,
 		MM_AUD_ERR("%s: invalid device info\n", __func__);
 		return -EINVAL;
 	}
-	MM_AUD_INFO("msm_set_voc_route: %s stream_type %d dev_id %d\n", dev_info->name, stream_type, dev_id);
 	mutex_lock(&session_lock);
 	switch (stream_type) {
 	case AUDIO_ROUTE_STREAM_VOICE_RX:
@@ -322,13 +284,11 @@ int msm_set_voc_route(struct msm_snddev_info *dev_info,
 }
 EXPORT_SYMBOL(msm_set_voc_route);
 
-/* Bullshit.
 void msm_release_voc_thread(void)
 {
 	wake_up(&audio_dev_ctrl.wait);
 }
 EXPORT_SYMBOL(msm_release_voc_thread);
-*/
 
 int msm_snddev_get_enc_freq(session_id)
 {
@@ -360,25 +320,17 @@ int msm_get_voc_route(u32 *rx_id, u32 *tx_id)
 
 	*rx_id = audio_dev_ctrl.voice_rx_dev->acdb_id;
 	*tx_id = audio_dev_ctrl.voice_tx_dev->acdb_id;
-	MM_DBG("voc route rx=%d tx=%d", *rx_id, *tx_id);
+
 	mutex_unlock(&session_lock);
 
 	return rc;
 }
 EXPORT_SYMBOL(msm_get_voc_route);
 
-#ifdef REC_TEST
-struct msm_snddev_info *msm_get_tx_voc_route(void)
-{
-	return audio_dev_ctrl.voice_tx_dev;
-}
-EXPORT_SYMBOL(msm_get_tx_voc_route);
-#endif
-
 struct msm_snddev_info *audio_dev_ctrl_find_dev(u32 dev_id)
 {
 	struct msm_snddev_info *info;
-	MM_DBG("dev=%d\n", dev_id);
+
 	if ((audio_dev_ctrl.num_dev - 1) < dev_id) {
 		info = ERR_PTR(-ENODEV);
 		goto error;
@@ -433,7 +385,8 @@ static int audio_dev_ctrl_get_devices(struct audio_dev_ctrl_state *dev_ctrl,
 	for (index = 0; index < dev_ctrl->num_dev; index++) {
 		work_tbl[index].dev_id = index;
 		work_tbl[index].dev_cap = dev_ctrl->devs[index]->capability;
-		strlcpy(work_tbl[index].dev_name, dev_ctrl->devs[index]->name,64);
+		strlcpy(work_tbl[index].dev_name, dev_ctrl->devs[index]->name,
+		64);
 	}
 
 	if (copy_to_user((void *) (work_list.list), work_tbl,
@@ -460,7 +413,7 @@ int auddev_register_evt_listner(u32 evt_id, u32 clnt_type, u32 clnt_id,
 		MM_AUD_ERR("No memory to add new listener node\n");
 		return -ENOMEM;
 	}
-	MM_AUD_INFO("evt_id %x clnt_type %d clnt_id %d\n", evt_id, clnt_type, clnt_id);
+
 	mutex_lock(&session_lock);
 	new_cb->cb_next = NULL;
 	new_cb->auddev_evt_listener = listner;
@@ -539,7 +492,6 @@ int msm_snddev_withdraw_freq(u32 session_id, u32 capability, u32 clnt_type)
 	struct msm_snddev_info *info;
 	u32 session_mask = 0;
 
-	MM_DBG("\n");
 	if ((clnt_type == AUDDEV_CLNT_VOC) && (session_id != 0))
 		return -EINVAL;
 	if ((clnt_type == AUDDEV_CLNT_DEC)
@@ -571,7 +523,6 @@ int msm_snddev_withdraw_freq(u32 session_id, u32 capability, u32 clnt_type)
 		routing_info.voice_rx_sample_rate = 48000;
 	return 0;
 }
-EXPORT_SYMBOL(msm_snddev_withdraw_freq);
 
 int msm_snddev_request_freq(int *freq, u32 session_id,
 			u32 capability, u32 clnt_type)
@@ -655,8 +606,9 @@ int msm_snddev_request_freq(int *freq, u32 session_id,
 							SESSION_IGNORE);
 			}
 		}
-	/*	MM_DBG("info->set_sample_rate = %d\n", info->set_sample_rate);
-		MM_DBG("routing_info.enc_freq.freq = %d\n", routing_info.enc_freq[session_id].freq); */
+		MM_DBG("info->set_sample_rate = %d\n", info->set_sample_rate);
+		MM_DBG("routing_info.enc_freq.freq = %d\n",
+					routing_info.enc_freq[session_id].freq);
 	}
 	return rc;
 }
@@ -693,11 +645,9 @@ static int audio_dev_ctrl_ioctl(struct inode *inode, struct file *file,
 	mutex_lock(&session_lock);
 	switch (cmd) {
 	case AUDIO_GET_NUM_SND_DEVICE:
-		MM_DBG("AUDIO_GET_NUM_SND_DEVICE\n");
 		rc = put_user(dev_ctrl->num_dev, (uint32_t __user *) arg);
 		break;
 	case AUDIO_GET_SND_DEVICES:
-		MM_DBG("AUDIO_GET_SND_DEVICES\n");
 		rc = audio_dev_ctrl_get_devices(dev_ctrl, (void __user *) arg);
 		break;
 	case AUDIO_ENABLE_SND_DEVICE: {
@@ -705,51 +655,18 @@ static int audio_dev_ctrl_ioctl(struct inode *inode, struct file *file,
 		u32 dev_id;
 
 		if (get_user(dev_id, (u32 __user *) arg)) {
-			MM_ERR("AUDIO_ENABLE_SND_DEVICE: cannot get dev_it\n");	
 			rc = -EFAULT;
 			break;
 		}
-		MM_DBG("AUDIO_ENABLE_SND_DEVICE %d: entry\n", dev_id);
 		dev_info = audio_dev_ctrl_find_dev(dev_id);
-		if (IS_ERR(dev_info)) rc = PTR_ERR(dev_info);
-		else if (!dev_info->opened) {
-		    int retries = 3;	
-#ifdef REC_TEST
-		    uint32_t set_freq = 0; //dev_info->sample_rate;
-		    int rx_freq = 0, tx_freq = 0;
-
-			if(msm_device_is_voice(dev_id) == 0) {
-				MM_DBG("setting freq\n");
-				 msm_get_voc_freq(&tx_freq, &rx_freq);
-                		if (dev_info->capability & SNDDEV_CAP_TX) set_freq = tx_freq;
-			//	else if (dev_info->capability & SNDDEV_CAP_RX) set_freq = rx_freq;
-                                if (set_freq == 0) set_freq = dev_info->sample_rate;
-			} else set_freq = dev_info->sample_rate;
-			rc = dev_info->dev_ops.set_freq(dev_info, set_freq);
-			MM_DBG("set_freq=%d freq=%d\n", set_freq, rc);
-			if (rc < 0) {
-				MM_DBG("device freq failed!\n");
-				break;
-			}
-			dev_info->set_sample_rate = rc;
-			rc = 0;
-#endif
-                        do {
+		if (IS_ERR(dev_info))
+			rc = PTR_ERR(dev_info);
+		else {
 			rc = dev_info->dev_ops.open(dev_info);
-                                retries--;
-				if(rc) MM_DBG("open(dev_info) error %d, retrying\n", rc);
-                        } while (rc < 0 && retries);
-			if (!rc) {
+			if (!rc)
 				dev_info->opened = 1;
-#if 0 //def REC_TEST 
-				mutex_unlock(&session_lock);
-				broadcast_event(AUDDEV_EVT_DEV_RDY, dev_id, SESSION_IGNORE);
-				MM_DBG("AUDIO_ENABLE_SND_DEVICE: done, dev=%d (%s)\n", dev_id, dev_info->name);
-				return rc;
-#endif
+			wake_up(&audio_dev_ctrl.wait);
 		}
-		} else MM_DBG("AUDIO_ENABLE_SND_DEVICE: device %d already open\n", dev_id);
-		MM_DBG("AUDIO_ENABLE_SND_DEVICE %d: exit %d\n", dev_id, rc);
 		break;
 
 	}
@@ -758,7 +675,6 @@ static int audio_dev_ctrl_ioctl(struct inode *inode, struct file *file,
 		struct msm_snddev_info *dev_info;
 		u32 dev_id;
 
-		MM_DBG("AUDIO_DISABLE_SND_DEVICE: entry\n");
 		if (get_user(dev_id, (u32 __user *) arg)) {
 			rc = -EFAULT;
 			break;
@@ -766,45 +682,25 @@ static int audio_dev_ctrl_ioctl(struct inode *inode, struct file *file,
 		dev_info = audio_dev_ctrl_find_dev(dev_id);
 		if (IS_ERR(dev_info))
 			rc = PTR_ERR(dev_info);
-		else if (dev_info->opened) {
-#if 0 //def REC_TEST
-			mutex_unlock(&session_lock);
-	        	broadcast_event(AUDDEV_EVT_REL_PENDING, dev_id, SESSION_IGNORE);
-			mutex_lock(&session_lock);
-#endif
+		else {
 			rc = dev_info->dev_ops.close(dev_info);
-			if(rc < 0) { 
-				MM_ERR("error disabling device!");
-			//	break;
-		}
 			dev_info->opened = 0;
-#if 0 //def REC_TEST
-			mutex_unlock(&session_lock);
-			broadcast_event(AUDDEV_EVT_DEV_RLS, dev_id, SESSION_IGNORE);
-			mutex_lock(&session_lock);
-#endif
-		} else MM_DBG("AUDIO_DISABLE_SND_DEVICE: device %d already closed\n", dev_id);
-		MM_DBG("AUDIO_DISABLE_SND_DEVICE: done, dev=%d (%s)\n", dev_id, dev_info->name);
+		}
 		break;
 	}
 
 	case AUDIO_ROUTE_STREAM: {
 		struct msm_audio_route_config route_cfg;
 		struct msm_snddev_info *dev_info;
-#ifdef REC_TEST
-		uint32_t session_mask;
-		uint32_t session_id, set;
-#endif
-		if (copy_from_user(&route_cfg, (void __user *) arg, sizeof(struct msm_audio_route_config))) {
+
+		if (copy_from_user(&route_cfg, (void __user *) arg,
+			sizeof(struct msm_audio_route_config))) {
 			rc = -EFAULT;
 			break;
 		}
-
-		MM_DBG("AUDIO_ROUTE_STREAM: dev_id=%d type=%d stream_id=%d\n", 
-				route_cfg.dev_id, route_cfg.stream_type, route_cfg.stream_id & ~0x80000000);
-
+		MM_DBG("%s: route cfg %d %d type\n", __func__,
+		route_cfg.dev_id, route_cfg.stream_type);
 		dev_info = audio_dev_ctrl_find_dev(route_cfg.dev_id);
-
 		if (IS_ERR(dev_info)) {
 			MM_AUD_ERR("%s: pass invalid dev_id\n", __func__);
 			rc = PTR_ERR(dev_info);
@@ -814,7 +710,6 @@ static int audio_dev_ctrl_ioctl(struct inode *inode, struct file *file,
 		switch (route_cfg.stream_type) {
 
 		case AUDIO_ROUTE_STREAM_VOICE_RX:
-
 			if (!(dev_info->capability & SNDDEV_CAP_RX) |
 			    !(dev_info->capability & SNDDEV_CAP_VOICE)) {
 				rc = -EINVAL;
@@ -822,184 +717,21 @@ static int audio_dev_ctrl_ioctl(struct inode *inode, struct file *file,
 			}
 			dev_ctrl->voice_rx_dev = dev_info;
 			break;
-#if 0
-			if (!(dev_info->capability & SNDDEV_CAP_RX) |
-			    !(dev_info->capability & SNDDEV_CAP_VOICE)) {
-				rc = -EINVAL;
-				break;
-			}
-			set = (route_cfg.stream_id & 0x80000000);
-			if (dev_info->acdb_id != 10 && dev_info->acdb_id < 1000) {
-				struct snddev_icodec_state *icodec = (struct snddev_icodec_state *)dev_info->private_data;
-				struct adie_codec_hwsetting_entry *entry = icodec->data->profile->settings;
-				int i, j = icodec->data->profile->setting_sz;
-				set = (route_cfg.stream_id & 0x80000000);
-				if (set) {
-					for (i = 0; i < j; i++)
-						if (entry[i].voc_action != NULL) {
-							entry[i].actions = entry[i].voc_action;
-							entry[i].action_sz = entry[i].voc_action_sz;
-						}
-				} else {
-					for (i = 0; i < j; i++)
-						if (entry[i].midi_action != NULL) {
-							entry[i].actions = entry[i].midi_action;
-							entry[i].action_sz = entry[i].midi_action_sz;
-						}
-				}
-			}
-			mutex_unlock(&session_lock);
-			rc = msm_set_voc_route(dev_info,AUDIO_ROUTE_STREAM_VOICE_RX,route_cfg.dev_id);
-			if(rc == 0 && set && dev_info->opened)
-				broadcast_event(AUDDEV_EVT_DEV_RDY, route_cfg.dev_id,
-                                	0x1 << (8 * ((int)AUDDEV_CLNT_VOC-1)));
-			MM_DBG("AUDIO_ROUTE_STREAM: exit %d\n", rc);
-			return rc;
-
-#endif
 		case AUDIO_ROUTE_STREAM_VOICE_TX:
-
 			if (!(dev_info->capability & SNDDEV_CAP_TX) |
 			    !(dev_info->capability & SNDDEV_CAP_VOICE)) {
 				rc = -EINVAL;
 				break;
 			}
 			dev_ctrl->voice_tx_dev = dev_info;
-#if 0 //REC_TEST
-			session_id = (route_cfg.stream_id & 0xFFFF);
-			set = (route_cfg.stream_id & 0x80000000) ? 1 : 0;
-			session_mask = (0x1 << (session_id)) << (8 * ((int)AUDDEV_CLNT_ENC-1));
-			rc = msm_snddev_set_enc(session_id, dev_info->copp_id, set);
-#if 0 
-			if(!set) {
-				dev_info->sessions &= ~(session_mask);
-				mutex_unlock(&session_lock);
-				if (dev_info->opened) broadcast_event(AUDDEV_EVT_DEV_RLS, route_cfg.dev_id, session_mask);
-			} else {
-				dev_info->sessions = dev_info->sessions | session_mask;
-				mutex_unlock(&session_lock);
-				if (dev_info->opened) broadcast_event(AUDDEV_EVT_DEV_RDY, route_cfg.dev_id, session_mask);
-			}
-#endif
-                        if (dev_info->acdb_id != 9 && dev_info->acdb_id < 1000) {
-                                struct snddev_icodec_state *icodec = (struct snddev_icodec_state *)dev_info->private_data;
-                                struct adie_codec_hwsetting_entry *entry = icodec->data->profile->settings;
-                                int i, j = icodec->data->profile->setting_sz;
-                                if (set) {
-                                        for (i = 0; i < j; i++)
-                                                if (entry[i].voc_action != NULL) {
-                                                        entry[i].actions = entry[i].voc_action;
-                                                        entry[i].action_sz = entry[i].voc_action_sz;
-                                                }
-                                } else {
-                                        for (i = 0; i < j; i++)
-                                                if (entry[i].midi_action != NULL) {
-                                                        entry[i].actions = entry[i].midi_action;
-                                                        entry[i].action_sz = entry[i].midi_action_sz;
-                                                }
-                                }
-                        }
-			mutex_unlock(&session_lock);
-			msm_set_voice_mute(DIR_TX, !set);
-			rc = msm_set_voc_route(dev_info,AUDIO_ROUTE_STREAM_VOICE_TX,route_cfg.dev_id);
-#if 0
-			if(rc == 0) {
-				broadcast_event(AUDDEV_EVT_DEV_CHG_VOICE, route_cfg.dev_id, 
-					0x1 << (8 * ((int)AUDDEV_CLNT_VOC-1)));
-				if(set && dev_info->opened) 
-					broadcast_event(AUDDEV_EVT_DEV_RDY, route_cfg.dev_id, 
-						0x1 << (8 * ((int)AUDDEV_CLNT_VOC-1)));
-			}
-#endif
-			MM_DBG("AUDIO_ROUTE_STREAM: exit %d\n", rc);
-			return rc;
-
-#endif
 			break;
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-#ifdef REC_TEST
-		    case AUDIO_ROUTE_STREAM_REC: {
-
-		        int enc_freq = 0;
-		        int requested_freq = 0;
-
-			MM_DBG("AUDIO_ROUTE_STREAM_REC\n");
-
-			session_id = (route_cfg.stream_id & ~0x80000000);
-			set = ((route_cfg.stream_id & 0x80000000) == 0) ? 0 : 1;
-			session_mask = (0x1 << (session_id)) << (8 * ((int)AUDDEV_CLNT_ENC-1));
-			rc = msm_snddev_set_enc(session_id, dev_info->copp_id, set);
-			if (!set) {
-				MM_DBG("not set, rc = %d\n",rc);
-				dev_info->sessions &= ~(session_mask);
-				mutex_unlock(&session_lock);
-				if (dev_info->opened) broadcast_event(AUDDEV_EVT_DEV_RLS, route_cfg.dev_id, session_mask);
-				return rc;
-			} else {
-				MM_DBG("encoder set, rc = %d\n",rc);
-				dev_info->sessions = dev_info->sessions | session_mask;
-				enc_freq = msm_snddev_get_enc_freq(session_id);
-				requested_freq = enc_freq;
-				if (enc_freq > 0) {
-					rc = msm_snddev_request_freq(&enc_freq, session_id, SNDDEV_CAP_TX, AUDDEV_CLNT_ENC);
-					MM_DBG("sample rate configured %d sample rate requested %d \n", enc_freq, requested_freq);
-	                                if ((rc <= 0) || (enc_freq != requested_freq)) {
-        	                                MM_DBG("failure, msm_snddev_withdraw_freq!\n");
-                	                        rc = msm_snddev_withdraw_freq(session_id, SNDDEV_CAP_TX, AUDDEV_CLNT_ENC);
-                        	                broadcast_event(AUDDEV_EVT_FREQ_CHG, route_cfg.dev_id, SESSION_IGNORE);
-                                	}
-	                        }
-				MM_DBG("route set\n");
-				mutex_unlock(&session_lock);
-				if (dev_info->opened) broadcast_event(AUDDEV_EVT_DEV_RDY, route_cfg.dev_id, session_mask);
-				return rc;
 		}
 		break;
 	}
-#endif
-		    /* case AUDIO_ROUTE_STREAM_PLAYBACK: */
-		    default:
-			MM_ERR("They forgot to write me!!!!!\n");			
-			break;
-		} /* end switch(route_cfg.stream_type) */
-		MM_DBG("AUDIO_ROUTE_STREAM: exit %d\n", rc);	
-		break;
-	} /* end case AUDIO_ROUTE_STREAM */
 
-#ifdef REC_TEST
-#define AUDIO_GET_ROUTING_INFO  _IOR(AUDIO_IOCTL_MAGIC, 57, struct audio_routing_info)
-#define AUDIO_GET_ROUTING_DATA  _IOR(AUDIO_IOCTL_MAGIC, 58, struct rt_data)
-
-	case AUDIO_GET_ROUTING_INFO: {
-		if (copy_to_user((void *) arg, &routing_info, sizeof(routing_info))) rc = -EFAULT;
-		break;
-	}
-
-	case AUDIO_GET_ROUTING_DATA: {
-		uint32_t k;
-		struct rt_data rtd;
-
-		memset(&rtd, 0, sizeof rtd);
-		for (k = 0; k < 32; k++)
-			if (audio_dev_ctrl.devs[k] && audio_dev_ctrl.devs[k]->opened) rtd.enabled_devs |= (1 << k);
-		if (audio_dev_ctrl.voice_rx_dev) {
-			rtd.rx_valid = 1; memcpy(&rtd.voice_rx_dev, audio_dev_ctrl.voice_rx_dev, sizeof(struct msm_snddev_info));
-		}
-		if (audio_dev_ctrl.voice_tx_dev) {
-			rtd.tx_valid = 1; memcpy(&rtd.voice_tx_dev, audio_dev_ctrl.voice_tx_dev, sizeof(struct msm_snddev_info));
-		}
-		if (copy_to_user((void *) arg, &rtd, sizeof rtd)) rc = -EFAULT;
-		break;
-	}
-#endif
 	default:
 		rc = -EINVAL;
-	} /* end switch (cmd) */
+	}
 	mutex_unlock(&session_lock);
 	return rc;
 }
@@ -1048,35 +780,21 @@ void broadcast_event(u32 evt_id, u32 dev_id, u32 session_id)
 	u32 session_mask = 0;
 	static int pending_sent;
 
-	MM_DBG(": evt_id = %d, dev_id = %d\n", evt_id, dev_id);
+	MM_DBG(": evt_id = %d\n", evt_id);
 
 	if ((evt_id != AUDDEV_EVT_START_VOICE)
 		&& (evt_id != AUDDEV_EVT_END_VOICE)
-                && (evt_id != AUDDEV_EVT_STREAM_VOL_CHG)
-                && (evt_id != AUDDEV_EVT_VOICE_STATE_CHG)) {
+		&& (evt_id != AUDDEV_EVT_STREAM_VOL_CHG)) {
 		dev_info = audio_dev_ctrl_find_dev(dev_id);
-                if (IS_ERR(dev_info)) {
-                        MM_ERR("pass invalid dev_id\n");
+		if (IS_ERR(dev_info))
 			return;
 	}
-        }
 
-	if(event.cb == NULL) {
-		if (evt_id == AUDDEV_EVT_VOICE_STATE_CHG) {
-			mutex_lock(&session_lock);
-			MM_AUD_ERR("Got AUDDEV_EVT_VOICE_STATE_CHG %d but nobody cares!\n", dev_id);
-                	routing_info.voice_state = dev_id;
-			mutex_unlock(&session_lock);
-		}
+	if (event.cb != NULL)
+		callback = event.cb;
+	else
 		return;
-	}
-
-	callback = event.cb;
-
 	mutex_lock(&session_lock);
-
-        if (evt_id == AUDDEV_EVT_VOICE_STATE_CHG)
-                routing_info.voice_state = dev_id;
 
 	evt_payload = kzalloc(sizeof(union auddev_evt_data),
 			GFP_KERNEL);
@@ -1107,9 +825,8 @@ void broadcast_event(u32 evt_id, u32 dev_id, u32 session_id)
 		session_mask = (0x1 << (clnt_id))
 				<< (8 * ((int)callback->clnt_type-1));
 
-                if ((evt_id == AUDDEV_EVT_STREAM_VOL_CHG) || 
-                        (evt_id == AUDDEV_EVT_VOICE_STATE_CHG)) {
-			MM_DBG("AUDDEV_EVT_STREAM_VOL_CHG or AUDDEV_EVT_VOICE_STATE_CHG\n");
+		if (evt_id == AUDDEV_EVT_STREAM_VOL_CHG) {
+			MM_DBG("AUDDEV_EVT_STREAM_VOL_CHG\n");
 			goto volume_strm;
 		}
 
@@ -1155,19 +872,14 @@ volume_strm:
 					evt_payload->freq_info.acdb_dev_id
 						= dev_info->acdb_id;
 				}
-			} else if (evt_id == AUDDEV_EVT_VOICE_STATE_CHG) {
-                                evt_payload->voice_state =
-                                        routing_info.voice_state;
-			}  else if (dev_info != NULL) {
+			} else
 				evt_payload->routing_id = dev_info->copp_id;
-			}
 			callback->auddev_evt_listener(
 					evt_id,
 					evt_payload,
 					callback->private_data);
 sent_dec:
-                        if ((evt_id != AUDDEV_EVT_STREAM_VOL_CHG) &&
-                                (evt_id != AUDDEV_EVT_VOICE_STATE_CHG))
+			if (evt_id != AUDDEV_EVT_STREAM_VOL_CHG)
 				routing_info.dec_freq[clnt_id].freq
 						= dev_info->set_sample_rate;
 
@@ -1193,12 +905,8 @@ sent_dec:
 					evt_payload->freq_info.acdb_dev_id
 						= dev_info->acdb_id;
 				}
-			} else if (evt_id == AUDDEV_EVT_VOICE_STATE_CHG) {
-                                evt_payload->voice_state =
-                                        routing_info.voice_state;
-   			} else if (dev_info != NULL) {
+			} else
 				evt_payload->routing_id = dev_info->copp_id;
-			}
 			callback->auddev_evt_listener(
 					evt_id,
 					evt_payload,
@@ -1213,16 +921,10 @@ sent_enc:
 		}
 aud_cal:
 		if (callback->clnt_type == AUDDEV_CLNT_AUDIOCAL) {
-                        int temp_sessions;
 			MM_DBG("AUDDEV_CLNT_AUDIOCAL\n");
-			if (evt_id == AUDDEV_EVT_VOICE_STATE_CHG)
-                                evt_payload->voice_state =
-                                        routing_info.voice_state;
-                        else if (!dev_info->sessions)
+			if (!dev_info->sessions)
 				goto sent_aud_cal;
-			else {
-                                evt_payload->audcal_info.dev_id =
-                                                dev_info->copp_id;
+			evt_payload->audcal_info.dev_id = dev_info->copp_id;
 			evt_payload->audcal_info.acdb_id =
 				dev_info->acdb_id;
 			evt_payload->audcal_info.dev_type =
@@ -1232,25 +934,7 @@ aud_cal:
 				dev_info->set_sample_rate ?
 				dev_info->set_sample_rate :
 				dev_info->sample_rate;
-                        }
-                        if (evt_payload->audcal_info.dev_type ==
-                                                SNDDEV_CAP_TX) {
-                                if (session_id == SESSION_IGNORE)
-                                        temp_sessions = dev_info->sessions;
-                                else
-                                        temp_sessions = session_id;
-                                evt_payload->audcal_info.sessions =
-                                        (temp_sessions >>
-                                                ((AUDDEV_CLNT_ENC-1) * 8));
-                        } else {
-                                if (session_id == SESSION_IGNORE)
-                                        temp_sessions = dev_info->sessions;
-                                else
-                                        temp_sessions = session_id;
-                                evt_payload->audcal_info.sessions =
-                                        (temp_sessions >>
-                                                ((AUDDEV_CLNT_DEC-1) * 8));
-                        }
+
 			callback->auddev_evt_listener(
 				evt_id,
 				evt_payload,
@@ -1291,7 +975,7 @@ voc_events:
 						SNDDEV_CAP_RX;
 					evt_payload->voc_vm_info.acdb_dev_id =
 						dev_info->acdb_id;
-					if (routing_info.voice_rx_vol < 0)
+					if (routing_info.rx_mute == 1) /*mute rx*/
 						evt_payload->
 						voc_vm_info.dev_vm_val.mute =
 							routing_info.rx_mute;
@@ -1301,10 +985,10 @@ voc_events:
 							routing_info.voice_rx_vol;
 				}
 			} else if ((evt_id == AUDDEV_EVT_START_VOICE)
-					|| (evt_id == AUDDEV_EVT_END_VOICE)) {
+					|| (evt_id == AUDDEV_EVT_END_VOICE))
 				memset(evt_payload, 0,
 					sizeof(union auddev_evt_data));
-			} else if (evt_id == AUDDEV_EVT_FREQ_CHG) {
+			else if (evt_id == AUDDEV_EVT_FREQ_CHG) {
 				if (routing_info.voice_tx_sample_rate
 						!= dev_info->set_sample_rate) {
 					routing_info.voice_tx_sample_rate
@@ -1317,10 +1001,7 @@ voc_events:
 						= dev_info->acdb_id;
 				} else
 					goto sent_voc;
-			} else if (evt_id == AUDDEV_EVT_VOICE_STATE_CHG) {
-                                evt_payload->voice_state =
-                                                routing_info.voice_state;
-			} else if (dev_info != NULL) {
+			} else {
 				evt_payload->voc_devinfo.dev_type =
 					(dev_info->capability & SNDDEV_CAP_TX) ?
 					SNDDEV_CAP_TX : SNDDEV_CAP_RX;
@@ -1399,14 +1080,14 @@ EXPORT_SYMBOL(mixer_post_event);
 
 static int __init audio_dev_ctrl_init(void)
 {
-//	init_waitqueue_head(&audio_dev_ctrl.wait);
+	init_waitqueue_head(&audio_dev_ctrl.wait);
 
 	event.cb = NULL;
+
 	atomic_set(&audio_dev_ctrl.opened, 0);
 	audio_dev_ctrl.num_dev = 0;
 	audio_dev_ctrl.voice_tx_dev = NULL;
 	audio_dev_ctrl.voice_rx_dev = NULL;
-        routing_info.voice_state = VOICE_STATE_INVALID;
 	return misc_register(&audio_dev_ctrl_misc);
 }
 

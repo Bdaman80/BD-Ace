@@ -66,7 +66,6 @@
 #include <asm/mach-types.h>
 #include <asm/uaccess.h>
 #include <mach/qdsp5v2_1x/audio_acdb_def.h>
-#include "snddev_virtual.h"
 
 /* define the value for BT_SCO */
 #define BT_SCO_PCM_CTL_VAL (PCM_CTL__RPCM_WIDTH__LINEAR_V |\
@@ -1000,32 +999,6 @@ static struct platform_device msm_ihs_vr_mic_device = {
 	.dev = { .platform_data = &snddev_ihs_vr_mic_data },
 };
 
-
-
-static struct snddev_virtual_data snddev_virt_tx_data = {
-        .capability = (SNDDEV_CAP_TX | SNDDEV_CAP_VOICE),
-        .name = "virt_tx",
-        .copp_id = 5,
-        .acdb_id = PSEUDO_ACDB_ID,
-};
-static struct snddev_virtual_data snddev_virt_rx_data = {
-        .capability = (SNDDEV_CAP_RX | SNDDEV_CAP_VOICE),
-        .name = "virt_rx",
-        .copp_id = 2,
-        .acdb_id = PSEUDO_ACDB_ID,
-};
-static struct platform_device msm_virt_rx_device = {
-        .name = "snddev_virtual",
-        .id = 0,
-        .dev = { .platform_data = &snddev_virt_rx_data },
-};
-static struct platform_device msm_virt_tx_device = {
-        .name = "snddev_virtual",
-        .id = 1,
-        .dev = { .platform_data = &snddev_virt_tx_data },
-};
-
-
 static struct platform_device *snd_devices_surf[] __initdata = {
 	&msm_iearpiece_device,
 	&msm_imic_device,
@@ -1048,9 +1021,7 @@ static struct platform_device *snd_devices_surf[] __initdata = {
 	&msm_ivr_mic_device,
 	&msm_ihs_vr_mic_device,
 	&gan_lite_iearpiece_device,
-	&gan_lite_ispeaker_rx_device,
-	&msm_virt_rx_device,
-	&msm_virt_tx_device,
+	&gan_lite_ispeaker_rx_device
 };
 
 void htc_7x30_register_analog_ops(struct q5v2audio_analog_ops *ops)

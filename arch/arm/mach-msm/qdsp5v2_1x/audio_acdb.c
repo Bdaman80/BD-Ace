@@ -837,11 +837,13 @@ void get_aupp_mbadrc_block(u32 *phy_addr)
 						IID_MBADRC_PARAMETERS)) {
 					if (prs_hdr->iid ==
 							 IID_MBADRC_EXT_BUFF) {
-						MM_DBG("Got IID = IID_MBADRC_EXT_BUFF\n");
+						MM_DBG(" \
+						Got IID \
+						 = IID_MBADRC_EXT_BUFF\n");
 						*phy_addr = acdb_data.phys_addr\
 							+ index
 						+ sizeof(struct header);
-						memcpy(acdb_data. 	/* FUCK such style */
+						memcpy(acdb_data. \
 							mbadrc_block.ext_buf,
 							(acdb_data.virt_addr
 								 + index +
@@ -854,7 +856,8 @@ void get_aupp_mbadrc_block(u32 *phy_addr)
 							sizeof(struct header);
 					} else if (prs_hdr->iid
 						 == IID_MBADRC_BAND_CONFIG) {
-						MM_DBG("Got IID = IID_MBADRC_BAND_CONFIG\n");
+						MM_DBG("Got IID \
+						== IID_MBADRC_BAND_CONFIG\n");
 						if (acdb_data. \
 							mbadrc_block.parameters\
 							.mbadrc_num_bands > mbadrc_num_bands) {
@@ -884,7 +887,8 @@ void get_aupp_mbadrc_block(u32 *phy_addr)
 							(acdb_data.virt_addr
 							+ index +
 							sizeof(struct header));
-						MM_DBG("Got IID = IID_MBADRC_PARAMETERS\n");
+						MM_DBG("Got IID\
+						 == IID_MBADRC_PARAMETERS\n");
 						acdb_data.mbadrc_block.
 						parameters.mbadrc_enable =
 							tmp->mbadrc_enable;

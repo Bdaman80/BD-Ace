@@ -25,6 +25,7 @@
 
 #include <mach/qdsp5v2_1x/audpreproc.h>
 
+#define MAX_ENC_COUNT 2
 
 #define MSM_ADSP_ENC_CODEC_WAV 0
 #define MSM_ADSP_ENC_CODEC_AAC 1
@@ -47,6 +48,7 @@ struct msm_adspenc_info {
 	.module_queueids = queueids, .module_encid = encid, \
 	.enc_formats = formats}
 
+#define MAX_EVENT_CALLBACK_CLIENTS 1
 
 struct msm_adspenc_database {
 	unsigned num_enc;
@@ -54,34 +56,25 @@ struct msm_adspenc_database {
 };
 
 static struct msm_adspenc_info enc_info_list[] = {
-	ENC_MODULE_INFO("AUDREC0TASK", 
-			 ((QDSP_uPAudRec0BitStreamQueue << 16)| 
-			   QDSP_uPAudRec0CmdQueue), 0, 
-			 ((1 << MSM_ADSP_ENC_CODEC_WAV) | 
+	ENC_MODULE_INFO("AUDREC0TASK", \
+			 ((QDSP_uPAudRec0BitStreamQueue << 16)| \
+			   QDSP_uPAudRec0CmdQueue), 0, \
+			 ((1 << MSM_ADSP_ENC_CODEC_WAV) | \
 			  (1 << MSM_ADSP_ENC_CODEC_SBC))),
-	ENC_MODULE_INFO("AUDREC1TASK",
-			 ((QDSP_uPAudRec1BitStreamQueue << 16)| 
-			   QDSP_uPAudRec1CmdQueue), 1, 
-			 ((1 << MSM_ADSP_ENC_CODEC_WAV) | 
-			  (1 << MSM_ADSP_ENC_CODEC_AAC) | 
-			  (1 << MSM_ADSP_ENC_CODEC_AMRNB) | 
-			  (1 << MSM_ADSP_ENC_CODEC_EVRC) | 
+	ENC_MODULE_INFO("AUDREC1TASK", \
+			 ((QDSP_uPAudRec1BitStreamQueue << 16)| \
+			   QDSP_uPAudRec1CmdQueue), 1, \
+			 ((1 << MSM_ADSP_ENC_CODEC_WAV) | \
+			  (1 << MSM_ADSP_ENC_CODEC_AAC) | \
+			  (1 << MSM_ADSP_ENC_CODEC_AMRNB) | \
+			  (1 << MSM_ADSP_ENC_CODEC_EVRC) | \
 			  (1 << MSM_ADSP_ENC_CODEC_QCELP))),
-#if 0
-        ENC_MODULE_INFO("AUDREC2TASK", /* not included in num_enc */ 
-                         ((QDSP_uPAudRec2BitStreamQueue << 16)| 
-                           QDSP_uPAudRec2CmdQueue), 2, 
-                          (1 << MSM_ADSP_ENC_CODEC_WAV)),
-#endif
 };
 
 static struct msm_adspenc_database msm_enc_database = {
 	.num_enc = ARRAY_SIZE(enc_info_list),
 	.enc_info_list = enc_info_list,
 };
-
-#define MAX_ENC_COUNT 	(ARRAY_SIZE(enc_info_list)) 
-#define MAX_EVENT_CALLBACK_CLIENTS 1
 
 struct audpreproc_state {
 	struct msm_adsp_module *mod;
@@ -118,8 +111,9 @@ static void audpreproc_dsp_event(void *data, unsigned id, size_t len,
 		struct audpreproc_cmd_cfg_done_msg cfg_done_msg;
 
 		getevent(&cfg_done_msg, AUDPREPROC_CMD_CFG_DONE_MSG_LEN);
-		MM_DBG("AUDPREPROC_CMD_CFG_DONE_MSG: stream id %d preproc type %x\n", 
-			cfg_done_msg.stream_id, cfg_done_msg.aud_preproc_type);
+		MM_DBG("AUDPREPROC_CMD_CFG_DONE_MSG: stream id %d preproc \
+			type %x\n", cfg_done_msg.stream_id, \
+			cfg_done_msg.aud_preproc_type);
 		if ((cfg_done_msg.stream_id < MAX_ENC_COUNT) &&
 				audpreproc->func[cfg_done_msg.stream_id])
 			audpreproc->func[cfg_done_msg.stream_id](
@@ -144,8 +138,8 @@ static void audpreproc_dsp_event(void *data, unsigned id, size_t len,
 		struct audpreproc_cmd_enc_cfg_done_msg enc_cfg_msg;
 
 		getevent(&enc_cfg_msg, AUDPREPROC_CMD_ENC_CFG_DONE_MSG_LEN);
-		MM_DBG("AUDPREPROC_CMD_ENC_CFG_DONE_MSG: stream id %d enc type %d\n", 
-			enc_cfg_msg.stream_id, enc_cfg_msg.rec_enc_type);
+		MM_DBG("AUDPREPROC_CMD_ENC_CFG_DONE_MSG: stream id %d enc type \
+			%d\n", enc_cfg_msg.stream_id, enc_cfg_msg.rec_enc_type);
 		if ((enc_cfg_msg.stream_id < MAX_ENC_COUNT) &&
 				audpreproc->func[enc_cfg_msg.stream_id])
 			audpreproc->func[enc_cfg_msg.stream_id](
@@ -178,27 +172,13 @@ static void audpreproc_dsp_event(void *data, unsigned id, size_t len,
 						record_cfg_done;
 		getevent(&record_cfg_done,
 			AUDPREPROC_AFE_CMD_AUDIO_RECORD_CFG_DONE_MSG_LEN);
-		MM_DBG("AUDPREPROC_AFE_CMD_AUDIO_RECORD_CFG_DONE_MSG: stream id %d\n", 
-			record_cfg_done.stream_id);
+		MM_DBG("AUDPREPROC_AFE_CMD_AUDIO_RECORD_CFG_DONE_MSG: \
+			stream id %d\n", record_cfg_done.stream_id);
 		if ((record_cfg_done.stream_id < MAX_ENC_COUNT) &&
 				audpreproc->func[record_cfg_done.stream_id])
 			audpreproc->func[record_cfg_done.stream_id](
 			audpreproc->private[record_cfg_done.stream_id], id,
 			&record_cfg_done);
-		break;
-	}
-	case AUDPREPROC_CMD_ROUTING_MODE_DONE_MSG: {
-		struct audpreproc_cmd_routing_mode_done  routing_mode_done;
-
-		getevent(&routing_mode_done,
-			AUDPREPROC_CMD_ROUTING_MODE_DONE_MSG_LEN);
-		MM_DBG("AUDPREPROC_CMD_ROUTING_MODE_DONE_MSG: stream id %d\n", 
-			routing_mode_done.stream_id);
-		if ((routing_mode_done.stream_id < MAX_ENC_COUNT) &&
-				audpreproc->func[routing_mode_done.stream_id])
-			audpreproc->func[routing_mode_done.stream_id](
-			audpreproc->private[routing_mode_done.stream_id], id,
-			&routing_mode_done);
 		break;
 	}
 	case ADSP_MESSAGE_ID:
@@ -294,6 +274,7 @@ out:
 }
 EXPORT_SYMBOL(audpreproc_disable);
 
+#define MAX_ENC_COUNT 2
 
 int audpreproc_register_event_callback(struct audpreproc_event_callback *ecb)
 {
@@ -325,17 +306,17 @@ int audpreproc_unregister_event_callback(struct audpreproc_event_callback *ecb)
 }
 EXPORT_SYMBOL(audpreproc_unregister_event_callback);
 
+#define MAX_EVENT_CALLBACK_CLIENTS 1
 
 /* enc_type = supported encode format *
  * like pcm, aac, sbc, evrc, qcelp, amrnb etc ... *
  */
-
-static int wakelock_init;
 int audpreproc_aenc_alloc(unsigned enc_type, const char **module_name,
 		     unsigned *queue_ids)
 {
 	struct audpreproc_state *audpreproc = &the_audpreproc_state;
 	int encid = -1, idx;
+	static int wakelock_init;
 
 	mutex_lock(audpreproc->lock);
 	for (idx = (msm_enc_database.num_enc - 1);
@@ -350,8 +331,10 @@ int audpreproc_aenc_alloc(unsigned enc_type, const char **module_name,
 
 	if (idx >= 0) {
 		audpreproc->enc_inuse |= (1 << idx);
-		*module_name = msm_enc_database.enc_info_list[idx].module_name;
-		*queue_ids = msm_enc_database.enc_info_list[idx].module_queueids;
+		*module_name =
+		    msm_enc_database.enc_info_list[idx].module_name;
+		*queue_ids =
+		    msm_enc_database.enc_info_list[idx].module_queueids;
 		encid = msm_enc_database.enc_info_list[idx].module_encid;
 	}
 
@@ -383,47 +366,6 @@ void audpreproc_aenc_free(int enc_id)
 
 }
 EXPORT_SYMBOL(audpreproc_aenc_free);
-
-#if 0
-int audpreproc_is_last_id(int idx)
-{
-	return idx == msm_enc_database.num_enc;
-}
-EXPORT_SYMBOL(audpreproc_is_last_id);
-
-int audpreproc_aenc_alloc_last(unsigned enc_type, const char **module_name,
-                     unsigned *queue_ids)
-{
-        struct audpreproc_state *audpreproc = &the_audpreproc_state;
-        static int wakelock_init;
-	int idx =  msm_enc_database.num_enc;
-
-        mutex_lock(audpreproc->lock);
-	if ((audpreproc->enc_inuse & (1 << idx)) || 
-	    !(msm_enc_database.enc_info_list[idx].enc_formats & (1 << enc_type))) {
-        	return -ENODEV;
-	}
-	audpreproc->enc_inuse |= (1 << idx);
-	*module_name = msm_enc_database.enc_info_list[idx].module_name;
-	*queue_ids = msm_enc_database.enc_info_list[idx].module_queueids;
-        if (!wakelock_init) {
-		wake_lock_init(&audpre_wake_lock, WAKE_LOCK_SUSPEND, "audpre");
-                wakelock_init = 1;
-        }
-        mutex_unlock(audpreproc->lock);
-        return idx;
-}
-EXPORT_SYMBOL(audpreproc_aenc_alloc_last);
-
-void audpreproc_aenc_free_last(void) 
-{
-	struct audpreproc_state *audpreproc = &the_audpreproc_state;
-        mutex_lock(audpreproc->lock);
-	audpreproc->enc_inuse &= ~(1 << msm_enc_database.num_enc);
-        mutex_unlock(audpreproc->lock);
-}
-EXPORT_SYMBOL(audpreproc_aenc_free_last);
-#endif
 
 int audpreproc_send_preproccmdqueue(void *cmd, unsigned len)
 {
