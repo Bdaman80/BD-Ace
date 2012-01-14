@@ -56,12 +56,19 @@
 #define PLL2_L_VAL_ADDR  (MSM_CLK_CTL_BASE + 0x33c)
 
 #define ACE_ACPU_MIN_UV_MV 750U
-#ifdef CONFIG_BIGBOY
-#ifdef CONFIG_WCHRAGE
-#define ACE_ACPU_MAX_UV_MV 1500U
-#else
+
+#ifdef CONFIG_SAFE
 #define ACE_ACPU_MAX_UV_MV 1350U
 #endif
+
+#ifdef CONFIG_BIGBOY
+#define ACE_ACPU_MAX_UV_MV 1500U
+#endif
+
+#ifdef CONFIG_WCHRAGE
+#define ACE_ACPU_MAX_UV_MV 1600U
+#endif
+
 
 struct clock_state {
 	struct clkctl_acpu_speed	*current_speed;
@@ -87,6 +94,26 @@ struct clkctl_acpu_speed {
 
 static struct clock_state drv_state = { 0 };
 
+#ifdef CONFIG_SAFE
+static struct cpufreq_frequency_table freq_table[] = {
+	{ 0, 245000 },
+	{ 1, 422400 },
+	{ 2, 499200 },
+	{ 3, 576000 },
+	{ 4, 652800 },
+	{ 5, 729600 },
+	{ 6, 806400 },
+	{ 7, 883200 },
+	{ 8, 960000 },
+	{ 9, 1036800 },
+	{ 10, 1113600 },
+	{ 11, 1190400 },
+	{ 12, 1267200 },
+	{ 13, 1344000 },
+	{ 14, CPUFREQ_TABLE_END },
+};
+#endif
+
 #ifdef CONFIG_BIGBOY 
 static struct cpufreq_frequency_table freq_table[] = {
 	{ 0, 245000 },
@@ -110,24 +137,6 @@ static struct cpufreq_frequency_table freq_table[] = {
 	{ 18, 1728000 },
 	{ 19, 1804800 },
 	{ 20, CPUFREQ_TABLE_END },
-};
-#else
-static struct cpufreq_frequency_table freq_table[] = {
-	{ 0, 245000 },
-	{ 1, 422400 },
-	{ 2, 499200 },
-	{ 3, 576000 },
-	{ 4, 652800 },
-	{ 5, 729600 },
-	{ 6, 806400 },
-	{ 7, 883200 },
-	{ 8, 960000 },
-	{ 9, 1036800 },
-	{ 10, 1113600 },
-	{ 11, 1190400 },
-	{ 12, 1267200 },
-	{ 13, 1344000 },
-	{ 14, CPUFREQ_TABLE_END },
 };
 #endif
 
@@ -165,30 +174,13 @@ static struct cpufreq_frequency_table freq_table[] = {
 	{ 29, 2572800 },
 	{ 30, CPUFREQ_TABLE_END },
 };
-#else
-static struct cpufreq_frequency_table freq_table[] = {
-	{ 0, 245000 },
-	{ 1, 422400 },
-	{ 2, 499200 },
-	{ 3, 576000 },
-	{ 4, 652800 },
-	{ 5, 729600 },
-	{ 6, 806400 },
-	{ 7, 883200 },
-	{ 8, 960000 },
-	{ 9, 1036800 },
-	{ 10, 1113600 },
-	{ 11, 1190400 },
-	{ 12, 1267200 },
-	{ 13, 1344000 },
-	{ 14, CPUFREQ_TABLE_END },
-};
 #endif
 
 /* Use negative numbers for sources that can't be enabled/disabled */
 #define SRC_LPXO (-2)
 #define SRC_AXI  (-1)
 static struct clkctl_acpu_speed acpu_freq_tbl[] = {
+#ifdef CONFIG_SAFE
 	{ 24576,  SRC_LPXO, 0, 0,  30720,  900, VDD_RAW(900) },
 	{ 61440,  PLL_3,    5, 11, 61440,  900, VDD_RAW(900) },
 	{ 122880, PLL_3,    5, 5,  61440,  900, VDD_RAW(900) },
@@ -208,15 +200,62 @@ static struct clkctl_acpu_speed acpu_freq_tbl[] = {
 	{ 1190400, PLL_2,   3, 0,  192000, 1125, VDD_RAW(1125) },
 	{ 1267200, PLL_2,   3, 0,  192000, 1150, VDD_RAW(1150) },
 	{ 1344000, PLL_2,   3, 0,  192000, 1175, VDD_RAW(1175) },
+#endif
+
 #ifdef CONFIG_BIGBOY
+	{ 24576,  SRC_LPXO, 0, 0,  30720,  900, VDD_RAW(900) },
+	{ 61440,  PLL_3,    5, 11, 61440,  900, VDD_RAW(900) },
+	{ 122880, PLL_3,    5, 5,  61440,  900, VDD_RAW(900) },
+	{ 184320, PLL_3,    5, 4,  61440,  900, VDD_RAW(900) },
+	{ MAX_AXI_KHZ, SRC_AXI, 1, 0, 61440, 900, VDD_RAW(900) },
+	{ 245000, PLL_3,    5, 2,  122500, 900, VDD_RAW(900) },
+	{ 422400, PLL_3,    5, 1,  192000, 925, VDD_RAW(925) },
+	{ 499200, PLL_1,    2, 0,  192000, 950, VDD_RAW(950) },
+	{ 576000, PLL_3,    5, 1,  192000, 975, VDD_RAW(975) },
+	{ 652800, PLL_2,    3, 0,  192000, 1000, VDD_RAW(1000) },
+	{ 729600, PLL_2,    3, 0,  192000, 1000, VDD_RAW(1000) },
+	{ 806400, PLL_2,    3, 0,  192000, 1025, VDD_RAW(1025) },
+	{ 883200, PLL_2,    3, 0,  192000, 1050, VDD_RAW(1050) },
+	{ 960000, PLL_2,    3, 0,  192000, 1050, VDD_RAW(1050) },
+	{ 1036800, PLL_2,   3, 0,  192000, 1075, VDD_RAW(1075) },
+	{ 1113600, PLL_2,   3, 0,  192000, 1100, VDD_RAW(1100) },
+	{ 1190400, PLL_2,   3, 0,  192000, 1125, VDD_RAW(1125) },
+	{ 1267200, PLL_2,   3, 0,  192000, 1150, VDD_RAW(1150) },
+	{ 1344000, PLL_2,   3, 0,  192000, 1175, VDD_RAW(1175) },
 	{ 1420800, PLL_2,   3, 0,  192000, 1200, VDD_RAW(1200) },
 	{ 1497600, PLL_2,   3, 0,  192000, 1275, VDD_RAW(1275) },
 	{ 1574400, PLL_2,   3, 0,  192000, 1300, VDD_RAW(1300) },
 	{ 1651200, PLL_2,   3, 0,  192000, 1375, VDD_RAW(1375) },
 	{ 1728000, PLL_2,   3, 0,  192000, 1400, VDD_RAW(1400) },
 	{ 1804800, PLL_2,   3, 0,  192000, 1425, VDD_RAW(1425) },
-#endif //CONFIG_BIGBOY
+#endif
+
 #ifdef CONFIG_WCHRAGE
+	{ 24576,  SRC_LPXO, 0, 0,  30720,  900, VDD_RAW(900) },
+	{ 61440,  PLL_3,    5, 11, 61440,  900, VDD_RAW(900) },
+	{ 122880, PLL_3,    5, 5,  61440,  900, VDD_RAW(900) },
+	{ 184320, PLL_3,    5, 4,  61440,  900, VDD_RAW(900) },
+	{ MAX_AXI_KHZ, SRC_AXI, 1, 0, 61440, 900, VDD_RAW(900) },
+	{ 245000, PLL_3,    5, 2,  122500, 900, VDD_RAW(900) },
+	{ 422400, PLL_3,    5, 1,  192000, 925, VDD_RAW(925) },
+	{ 499200, PLL_1,    2, 0,  192000, 950, VDD_RAW(950) },
+	{ 576000, PLL_3,    5, 1,  192000, 975, VDD_RAW(975) },
+	{ 652800, PLL_2,    3, 0,  192000, 1000, VDD_RAW(1000) },
+	{ 729600, PLL_2,    3, 0,  192000, 1000, VDD_RAW(1000) },
+	{ 806400, PLL_2,    3, 0,  192000, 1025, VDD_RAW(1025) },
+	{ 883200, PLL_2,    3, 0,  192000, 1050, VDD_RAW(1050) },
+	{ 960000, PLL_2,    3, 0,  192000, 1050, VDD_RAW(1050) },
+	{ 1036800, PLL_2,   3, 0,  192000, 1075, VDD_RAW(1075) },
+	{ 1113600, PLL_2,   3, 0,  192000, 1100, VDD_RAW(1100) },
+	{ 1190400, PLL_2,   3, 0,  192000, 1125, VDD_RAW(1125) },
+	{ 1267200, PLL_2,   3, 0,  192000, 1150, VDD_RAW(1150) },
+	{ 1344000, PLL_2,   3, 0,  192000, 1175, VDD_RAW(1175) },
+	{ 1420800, PLL_2,   3, 0,  192000, 1200, VDD_RAW(1200) },
+	{ 1497600, PLL_2,   3, 0,  192000, 1275, VDD_RAW(1275) },
+	{ 1574400, PLL_2,   3, 0,  192000, 1300, VDD_RAW(1300) },
+	{ 1651200, PLL_2,   3, 0,  192000, 1375, VDD_RAW(1375) },
+	{ 1728000, PLL_2,   3, 0,  192000, 1400, VDD_RAW(1400) },
+	{ 1804800, PLL_2,   3, 0,  192000, 1425, VDD_RAW(1425) },
 	{ 1881600, PLL_2,   3, 0,  192000, 1450, VDD_RAW(1450) },
 	{ 1958400, PLL_2,   3, 0,  192000, 1475, VDD_RAW(1475) },
 	{ 2035200, PLL_2,   3, 0,  192000, 1475, VDD_RAW(1475) },
@@ -227,7 +266,7 @@ static struct clkctl_acpu_speed acpu_freq_tbl[] = {
 	{ 2419200, PLL_2,   3, 0,  192000, 1550, VDD_RAW(1550) },
 	{ 2496000, PLL_2,   3, 0,  192000, 1575, VDD_RAW(1575) },
 	{ 2572800, PLL_2,   3, 0,  192000, 1600, VDD_RAW(1600) },
-#endif //CONFIG_WCHRAGE	
+#endif
 	{ 0 }
 };
 static unsigned long max_axi_rate;

@@ -1323,17 +1323,26 @@ config MSM_CPU_FREQ_ONDEMAND_MIN
 	int "Min"
 	default 245760
 
+config SAFE
+	bool "Safe Mode - Max 1.3Ghz OC"
+	default y
+	depends on CPU_FREQ && !PERFLOCK
+	help
+	 !!!! NEVER ALL 3 !!!! - Production Build Mode
+
 config BIGBOY
 	bool "BigBoy Mode - 1.8GHz OC"
 	default n
 	depends on CPU_FREQ && !PERFLOCK
+	help
+	 !!!! NEVER ALL 3 !!!! - 1.8Ghz OC Mode
 
 config WCHRAGE
 	bool "WCH Rage Mode - !! 2.5GHZ OC !!"
 	default n
 	depends on CPU_FREQ && !PERFLOCK
 	help
-	  Overclock to 2.5GHZ - Hope nothing breaks
+	 !!!! NEVER ALL 3 !!!! - Overclock to 2.5GHZ - Hope nothing breaks
 
 config MSM_HW3D
 	tristate "MSM Hardware 3D Register Driver"
