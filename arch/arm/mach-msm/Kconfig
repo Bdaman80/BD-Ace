@@ -1328,6 +1328,13 @@ config BIGBOY
 	default n
 	depends on CPU_FREQ && !PERFLOCK
 
+config WCHRAGE
+	bool "WCH Rage Mode - !! 2.5GHZ OC !!"
+	default n
+	depends on CPU_FREQ && !PERFLOCK
+	help
+	  Overclock to 2.5GHZ - Hope nothing breaks
+
 config MSM_HW3D
 	tristate "MSM Hardware 3D Register Driver"
 	depends on EARLYSUSPEND

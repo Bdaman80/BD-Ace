@@ -57,6 +57,7 @@
 
 #define ACE_ACPU_MIN_UV_MV 750U
 #ifdef CONFIG_BIGBOY
+#ifdef CONFIG_WCHRAGE
 #define ACE_ACPU_MAX_UV_MV 1500U
 #else
 #define ACE_ACPU_MAX_UV_MV 1350U
@@ -110,7 +111,20 @@ static struct cpufreq_frequency_table freq_table[] = {
 	{ 18, 1651200 },
 	{ 19, 1728000 },
 	{ 20, 1804800 },
+#ifndef CONFIG_WCHRAGE
 	{ 21, CPUFREQ_TABLE_END },
+#else //CONFIG_WCHRAGE
+	{ 22, 1881600 },
+	{ 23, 1958400 },
+	{ 24, 2035200 },
+	{ 25, 2112000 },
+	{ 26, 2188800 },
+	{ 27, 2265600 },
+	{ 28, 2342400 },
+	{ 29, 2419200 },
+	{ 30, 2496000 },
+	{ 31, 2572800 },
+	{ 32, CPUFREQ_TABLE_END },
 #endif
 };
 
@@ -145,6 +159,18 @@ static struct clkctl_acpu_speed acpu_freq_tbl[] = {
 	{ 1728000, PLL_2,   3, 0,  192000, 1400, VDD_RAW(1400) },
 	{ 1804800, PLL_2,   3, 0,  192000, 1425, VDD_RAW(1425) },
 #endif //CONFIG_BIGBOY
+#ifdef CONFIG_WCHRAGE
+	{ 1881600, PLL_2,   3, 0,  192000, 1450, VDD_RAW(1450) },
+	{ 1958400, PLL_2,   3, 0,  192000, 1475, VDD_RAW(1475) },
+	{ 2035200, PLL_2,   3, 0,  192000, 1475, VDD_RAW(1475) },
+	{ 2112000, PLL_2,   3, 0,  192000, 1500, VDD_RAW(1500) },
+	{ 2188800, PLL_2,   3, 0,  192000, 1525, VDD_RAW(1525) },
+	{ 2265600, PLL_2,   3, 0,  192000, 1525, VDD_RAW(1525) },
+	{ 2342400, PLL_2,   3, 0,  192000, 1550, VDD_RAW(1550) },
+	{ 2419200, PLL_2,   3, 0,  192000, 1550, VDD_RAW(1550) },
+	{ 2496000, PLL_2,   3, 0,  192000, 1575, VDD_RAW(1575) },
+	{ 2572800, PLL_2,   3, 0,  192000, 1600, VDD_RAW(1600) },
+#endif //CONFIG_WCHRAGE	
 	{ 0 }
 };
 static unsigned long max_axi_rate;
