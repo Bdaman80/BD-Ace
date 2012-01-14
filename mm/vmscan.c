@@ -126,7 +126,7 @@ struct scan_control {
  */
 #ifdef CONFIG_ZRAM
 int vm_swappiness = 70;
-else
+#else
 int vm_swappiness = 60;
 #endif
 long vm_total_pages;	/* The total number of pages which the VM controls */
