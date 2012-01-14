@@ -1,7 +1,7 @@
 /*
  * Automatically generated C config: don't edit
  * Linux kernel version: 2.6.35.10
- * Sat Jan  7 08:53:15 2012
+ * Sat Jan 14 06:20:58 2012
  */
 #define AUTOCONF_INCLUDED
 #define CONFIG_NF_CONNTRACK_H323 1
@@ -37,6 +37,7 @@
 #define CONFIG_NF_NAT_SIP 1
 #define CONFIG_HTC_VOICE_DUALMIC 1
 #define CONFIG_NETFILTER_XT_MATCH_STATISTIC 1
+#define CONFIG_WCHRAGE 1
 #define CONFIG_MTD_CMDLINE_PARTS 1
 #define CONFIG_NET_SCH_FIFO 1
 #define CONFIG_FSNOTIFY 1
@@ -469,7 +470,7 @@
 #define CONFIG_MSM_CAMERA 1
 #define CONFIG_DEBUG_KERNEL 1
 #define CONFIG_COMPAT_BRK 1
-#define CONFIG_LOCALVERSION "-BD-Ace_2012-1-7_BigBoy"
+#define CONFIG_LOCALVERSION "-BD-Ace_2012-1-14_BigBoy_WCHRage"
 #define CONFIG_MACH_SPADE 1
 #define CONFIG_CRYPTO 1
 #define CONFIG_SCHED_DEBUG 1
