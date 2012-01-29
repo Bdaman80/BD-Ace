@@ -185,7 +185,7 @@ config COMPACTION
 
 config CLEANCACHE
 	bool "Enable cleancache driver to cache clean pages if kmem is present"
-	default y
+	default n
 
 #
 # support for page migration
