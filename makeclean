@@ -1,0 +1,6 @@
+#!/bin/sh
+#Bdaman80 Make Cleanup script
+#Clean
+make clean
+mv .config arch/arm/configs/BD-Ace_defconfig
+gitclean
