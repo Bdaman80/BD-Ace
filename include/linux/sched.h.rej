@@ -1,0 +1,110 @@
+--- include/linux/sched.h	2010-08-06 19:38:28.859114980 +1000
++++ include/linux/sched.h	2010-08-06 19:38:43.767097655 +1000
+@@ -36,8 +36,15 @@
+ #define SCHED_FIFO		1
+ #define SCHED_RR		2
+ #define SCHED_BATCH		3
+-/* SCHED_ISO: reserved but not implemented yet */
++/* SCHED_ISO: Implemented on BFS only */
+ #define SCHED_IDLE		5
++#ifdef CONFIG_SCHED_BFS
++#define SCHED_ISO		4
++#define SCHED_IDLEPRIO		SCHED_IDLE
++#define SCHED_MAX		(SCHED_IDLEPRIO)
++#define SCHED_RANGE(policy)	((policy) <= SCHED_MAX)
++#endif
++
+ /* Can be ORed in to make sure the process is reverted back to SCHED_NORMAL on fork */
+ #define SCHED_RESET_ON_FORK     0x40000000
+ 
+@@ -268,8 +275,6 @@
+ extern void init_idle(struct task_struct *idle, int cpu);
+ extern void init_idle_bootup_task(struct task_struct *idle);
+ 
+-extern int runqueue_is_locked(int cpu);
+-
+ extern cpumask_var_t nohz_cpu_mask;
+ #if defined(CONFIG_SMP) && defined(CONFIG_NO_HZ)
+ extern int select_nohz_load_balancer(int cpu);
+@@ -1179,17 +1184,31 @@
+ 
+ 	int lock_depth;		/* BKL lock depth */
+ 
++#ifndef CONFIG_SCHED_BFS
+ #ifdef CONFIG_SMP
+ #ifdef __ARCH_WANT_UNLOCKED_CTXSW
+ 	int oncpu;
+ #endif
+ #endif
++#else /* CONFIG_SCHED_BFS */
++	int oncpu;
++#endif
+ 
+ 	int prio, static_prio, normal_prio;
+ 	unsigned int rt_priority;
++#ifdef CONFIG_SCHED_BFS
++	int time_slice, first_time_slice;
++	unsigned long deadline;
++	struct list_head run_list;
++	u64 last_ran;
++	u64 sched_time; /* sched_clock time spent running */
++
++	unsigned long rt_timeout;
++#else /* CONFIG_SCHED_BFS */
+ 	const struct sched_class *sched_class;
+ 	struct sched_entity se;
+ 	struct sched_rt_entity rt;
++#endif
+ 
+ #ifdef CONFIG_PREEMPT_NOTIFIERS
+ 	/* list of struct preempt_notifier: */
+@@ -1284,6 +1303,9 @@
+ 	int __user *clear_child_tid;		/* CLONE_CHILD_CLEARTID */
+ 
+ 	cputime_t utime, stime, utimescaled, stimescaled;
++#ifdef CONFIG_SCHED_BFS
++	unsigned long utime_pc, stime_pc;
++#endif
+ 	cputime_t gtime;
+ #ifndef CONFIG_VIRT_CPU_ACCOUNTING
+ 	cputime_t prev_utime, prev_stime;
+@@ -1585,9 +1668,19 @@
+ 
+ #define MAX_USER_RT_PRIO	100
+ #define MAX_RT_PRIO		MAX_USER_RT_PRIO
++#define DEFAULT_PRIO		(MAX_RT_PRIO + 20)
+ 
++#ifdef CONFIG_SCHED_BFS
++#define PRIO_RANGE		(40)
++#define MAX_PRIO		(MAX_RT_PRIO + PRIO_RANGE)
++#define ISO_PRIO		(MAX_RT_PRIO)
++#define NORMAL_PRIO		(MAX_RT_PRIO + 1)
++#define IDLE_PRIO		(MAX_RT_PRIO + 2)
++#define PRIO_LIMIT		((IDLE_PRIO) + 1)
++#else /* CONFIG_SCHED_BFS */
+ #define MAX_PRIO		(MAX_RT_PRIO + 40)
+-#define DEFAULT_PRIO		(MAX_RT_PRIO + 20)
++#define NORMAL_PRIO		DEFAULT_PRIO
++#endif /* CONFIG_SCHED_BFS */
+ 
+ static inline int rt_prio(int prio)
+ {
+@@ -1896,7 +1989,7 @@
+ extern unsigned long long thread_group_sched_runtime(struct task_struct *task);
+ 
+ /* sched_exec is called by processes performing an exec */
+-#ifdef CONFIG_SMP
++#if defined(CONFIG_SMP) && !defined(CONFIG_SCHED_BFS)
+ extern void sched_exec(void);
+ #else
+ #define sched_exec()   {}
+@@ -2060,6 +2153,9 @@
+  static inline void kick_process(struct task_struct *tsk) { }
+ #endif
+ extern void sched_fork(struct task_struct *p, int clone_flags);
++#ifdef CONFIG_SCHED_BFS
++extern void sched_exit(struct task_struct *p);
++#endif
+ extern void sched_dead(struct task_struct *p);
+ 
+ extern void proc_caches_init(void);

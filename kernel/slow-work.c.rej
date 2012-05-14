@@ -1,0 +1,10 @@
+--- kernel/slow-work.c	2010-08-06 19:38:28.936114890 +1000
++++ kernel/slow-work.c	2010-08-06 19:38:30.326113276 +1000
+@@ -716,7 +716,6 @@
+ 	DEFINE_WAIT(wait);
+ 
+ 	set_freezable();
+-	set_user_nice(current, -5);
+ 
+ 	/* allocate ourselves an ID */
+ 	spin_lock_irq(&slow_work_queue_lock);

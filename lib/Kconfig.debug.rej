@@ -1,0 +1,11 @@
+--- lib/Kconfig.debug	2010-08-06 19:38:28.831115012 +1000
++++ lib/Kconfig.debug	2010-08-06 19:38:30.324113277 +1000
+@@ -760,7 +760,7 @@
+ 
+ config RCU_TORTURE_TEST
+ 	tristate "torture tests for RCU"
+-	depends on DEBUG_KERNEL
++	depends on DEBUG_KERNEL && !SCHED_BFS
+ 	default n
+ 	help
+ 	  This option provides a kernel module that runs torture tests

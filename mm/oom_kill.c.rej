@@ -1,0 +1,11 @@
+--- mm/oom_kill.c	2010-08-06 19:38:28.914114917 +1000
++++ mm/oom_kill.c	2010-08-06 19:38:30.320113283 +1000
+@@ -411,7 +411,7 @@
+ 	 * all the memory it needs. That way it should be able to
+ 	 * exit() and clear out its resources quickly...
+ 	 */
+-	p->rt.time_slice = HZ;
++	set_oom_timeslice(p);
+ 	set_tsk_thread_flag(p, TIF_MEMDIE);
+ 
+ 	force_sig(SIGKILL, p);

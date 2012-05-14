@@ -1,0 +1,11 @@
+--- kernel/exit.c	2010-08-06 19:38:28.957114867 +1000
++++ kernel/exit.c	2010-08-06 19:38:30.320113283 +1000
+@@ -123,7 +123,7 @@
+ 		sig->inblock += task_io_get_inblock(tsk);
+ 		sig->oublock += task_io_get_oublock(tsk);
+ 		task_io_accounting_add(&sig->ioac, &tsk->ioac);
+-		sig->sum_sched_runtime += tsk->se.sum_exec_runtime;
++		sig->sum_sched_runtime += tsk_seruntime(tsk);
+ 	}
+ 
+ 	sig->nr_threads--;

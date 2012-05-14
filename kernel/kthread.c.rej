@@ -1,0 +1,12 @@
+--- kernel/kthread.c	2010-08-06 19:38:28.965114857 +1000
++++ kernel/kthread.c	2010-08-06 19:38:30.326113276 +1000
+@@ -167,7 +167,9 @@
+ 	}
+ 
+ 	p->cpus_allowed = cpumask_of_cpu(cpu);
++#ifndef CONFIG_SCHED_BFS
+ 	p->rt.nr_cpus_allowed = 1;
++#endif
+ 	p->flags |= PF_THREAD_BOUND;
+ }
+ EXPORT_SYMBOL(kthread_bind);

@@ -1,0 +1,18 @@
+--- Documentation/sysctl/kernel.txt	2010-08-06 19:38:28.838115005 +1000
++++ Documentation/sysctl/kernel.txt	2010-08-06 19:38:30.313113290 +1000
+@@ -31,6 +31,7 @@
+ - domainname
+ - hostname
+ - hotplug
++- iso_cpu
+ - java-appletviewer           [ binfmt_java, obsolete ]
+ - java-interpreter            [ binfmt_java, obsolete ]
+ - kstack_depth_to_print       [ X86 only ]
+@@ -53,6 +54,7 @@
+ - randomize_va_space
+ - real-root-dev               ==> Documentation/initrd.txt
+ - reboot-cmd                  [ SPARC only ]
++- rr_interval
+ - rtsig-max
+ - rtsig-nr
+ - sem

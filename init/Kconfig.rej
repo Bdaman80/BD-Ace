@@ -1,0 +1,20 @@
+--- init/Kconfig	2010-08-06 19:38:28.885114949 +1000
++++ init/Kconfig	2010-08-06 19:38:30.322113281 +1000
+@@ -550,7 +563,7 @@
+ 
+ config CGROUP_CPUACCT
+ 	bool "Simple CPU accounting cgroup subsystem"
+-	depends on CGROUPS
++	depends on CGROUPS && !SCHED_BFS
+ 	help
+ 	  Provides a simple Resource Controller for monitoring the
+ 	  total CPU consumed by the tasks in a cgroup.
+@@ -605,7 +618,7 @@
+ 
+ menuconfig CGROUP_SCHED
+ 	bool "Group CPU scheduler"
+-	depends on EXPERIMENTAL && CGROUPS
++	depends on EXPERIMENTAL && CGROUPS && !SCHED_BFS
+ 	default n
+ 	help
+ 	  This feature lets CPU scheduler recognize task groups and control CPU
