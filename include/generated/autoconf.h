@@ -1,7 +1,7 @@
 /*
  * Automatically generated C config: don't edit
  * Linux kernel version: 2.6.35.10
- * Fri Feb  3 06:09:17 2012
+ * Sun Jul 29 09:34:34 2012
  */
 #define AUTOCONF_INCLUDED
 #define CONFIG_NF_CONNTRACK_H323 1
@@ -191,6 +191,7 @@
 #define CONFIG_IPV6_SIT 1
 #define CONFIG_XFRM 1
 #define CONFIG_DEFCONFIG_LIST "/lib/modules/$UNAME_RELEASE/.config"
+#define CONFIG_SCHED_BFS 1
 #define CONFIG_IPV6_MULTIPLE_TABLES 1
 #define CONFIG_IP_NF_TARGET_MASQUERADE 1
 #define CONFIG_PROC_PAGE_MONITOR 1
@@ -548,7 +549,6 @@
 #define CONFIG_IFB 1
 #define CONFIG_HAS_IOPORT 1
 #define CONFIG_MSM_CPU_FREQ_MAX 1036800
-#define CONFIG_CGROUP_CPUACCT 1
 #define CONFIG_FB_EARLYSUSPEND 1
 #define CONFIG_HZ 100
 #define CONFIG_I2C_HELPER_AUTO 1
