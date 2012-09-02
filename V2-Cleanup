@@ -1,0 +1,8 @@
+#!/bin/bash
+#
+#Cleanup after yourself
+#
+make clean
+mv .config arch/arm/configs/BD-Ace_V2_defconfig
+gitclean
+git status
